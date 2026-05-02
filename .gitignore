@@ -1,0 +1,7 @@
+# Entornos y compilaciones
+venv/
+__pycache__/
+.pytest_cache/
+
+# Bases de datos locales
+*.db
