@@ -1,7 +1,7 @@
-# Entornos y compilaciones
 venv/
 __pycache__/
+*.pyc
+*.pyo
+safedriver.db
 .pytest_cache/
-
-# Bases de datos locales
-*.db
+.env
