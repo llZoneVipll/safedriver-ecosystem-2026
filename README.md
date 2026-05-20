@@ -1,5 +1,5 @@
 SafeDriver - Ecosistema Digital (2026)
-Sistema Inteligente de Prevención de Fatiga y Seguridad Vial**
+Sistema Inteligente de Prevención de Fatiga y Seguridad Vial
 Monorepo desarrollado para el curso de Desarrollo Basado en Plataformas.
 Arquitectura del Proyecto
 El ecosistema está dividido en plataformas independientes que conviven en este monorepo:
