@@ -41,6 +41,34 @@ class ApiService {
     );
     return response.statusCode == 201;
   }
+  
+  // Eliminar un conductor de forma segura
+  Future<bool> eliminarConductor(int id) async {
+    // 1. Recuperamos el token de la sesión persistente
+    final token = await AuthService().getToken(); 
+    
+    // 2. Enviamos la petición DELETE blindada
+    final response = await http.delete(
+      Uri.parse('$baseUrl/conductores/$id'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    
+    return response.statusCode == 200;
+  }
+
+  // Actualizar un conductor existente
+  Future<bool> editarConductor(int id, String nombre, String licencia) async {
+    final headers = await _headers();
+    final response = await http.put(
+      Uri.parse('$baseUrl/conductores/$id'),
+      headers: headers,
+      body: jsonEncode({
+        'nombre': nombre,
+        'licencia': licencia
+      }),
+    );
+    return response.statusCode == 200;
+  }
 
   // ── Alertas ──────────────────────────────────────────────
   Future<List<Alerta>> fetchAlertas() async {

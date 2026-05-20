@@ -99,19 +99,99 @@ class _HomePageState extends State<HomePage> {
                   );
                 }
                 return Column(
-                  children: snapshot.data!.map((c) => Card(
-                    child: ListTile(
-                      leading: const CircleAvatar(
-                        backgroundColor: Colors.deepOrange,
-                        child: Icon(Icons.person, color: Colors.white),
+                  children: snapshot.data!.map((c) => Dismissible(
+                    // La Key es obligatoria y debe ser única para cada elemento
+                    key: Key(c.id.toString()),
+                    // Solo permitimos deslizar de derecha a izquierda
+                    direction: DismissDirection.endToStart,
+                    // El fondo rojo con el tacho de basura que aparece al deslizar
+                    background: Container(
+                      color: Colors.red,
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 20),
+                      child: const Icon(Icons.delete, color: Colors.white),
+                    ),
+                    // Lo que sucede cuando el usuario termina de deslizar
+                    onDismissed: (direction) async {
+                      bool ok = await ApiService().eliminarConductor(c.id);
+                      
+                      if (ok) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("${c.nombre} eliminado del sistema")),
+                        );
+                        _refrescar(); // Actualizamos la lista con el backend
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Error de permisos o servidor caído")),
+                        );
+                        _refrescar(); // Recargamos para que el conductor vuelva a aparecer si falló
+                      }
+                    },
+                    child: Card(
+                      child: ListTile(
+                        leading: const CircleAvatar(
+                          backgroundColor: Colors.deepOrange,
+                          child: Icon(Icons.person, color: Colors.white),
+                        ),
+                        title: Text(c.nombre,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold)),
+                        subtitle: Text('Licencia: ${c.licencia}'),
+                        // --- AQUÍ EMPIEZA EL CAMBIO PARA EL MODAL DE EDICIÓN ---
+                        trailing: IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.blueGrey),
+                          onPressed: () {
+                            TextEditingController nombreCtrl = TextEditingController(text: c.nombre);
+                            TextEditingController licenciaCtrl = TextEditingController(text: c.licencia);
+
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text("Editar Conductor"),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    TextField(
+                                      controller: nombreCtrl, 
+                                      decoration: const InputDecoration(labelText: "Nombre")
+                                    ),
+                                    TextField(
+                                      controller: licenciaCtrl, 
+                                      decoration: const InputDecoration(labelText: "Licencia")
+                                    ),
+                                  ],
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context), 
+                                    child: const Text("Cancelar")
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () async {
+                                      bool ok = await ApiService().editarConductor(
+                                        c.id, 
+                                        nombreCtrl.text, 
+                                        licenciaCtrl.text
+                                      );
+                                      if (ok) {
+                                        if (context.mounted) {
+                                          Navigator.pop(context); // Cierra el modal
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text("Conductor actualizado")),
+                                          );
+                                        }
+                                        _refrescar(); // Actualiza la lista automáticamente
+                                      }
+                                    },
+                                    child: const Text("Guardar"),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                        // --- AQUÍ TERMINA EL CAMBIO ---
                       ),
-                      title: Text(c.nombre,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold)),
-                      subtitle: Text('Licencia: ${c.licencia}'),
-                      trailing: Text('#${c.id}',
-                          style:
-                              const TextStyle(color: Colors.grey)),
                     ),
                   )).toList(),
                 );

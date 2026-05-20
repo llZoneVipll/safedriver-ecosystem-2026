@@ -97,6 +97,49 @@ def obtener_conductor(conductor_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Conductor no encontrado")
     return conductor
 
+@app.delete(
+    "/conductores/{conductor_id}",
+    tags=["Conductores"],
+    summary="Eliminar conductor (requiere token)"
+)
+def eliminar_conductor(
+    conductor_id: int, 
+    db: Session = Depends(get_db),
+    usuario: str = Depends(verificar_token)   # 🔒 PROTEGIDO
+):
+    # Buscamos al conductor usando tu función CRUD actual
+    conductor = crud.obtener_conductor(db, conductor_id)
+    if not conductor:
+        raise HTTPException(status_code=404, detail="Conductor no encontrado")
+    
+    # Eliminamos el registro de la base de datos
+    db.delete(conductor)
+    db.commit()
+    return {"mensaje": "Conductor eliminado exitosamente"}
+
+@app.put(
+    "/conductores/{conductor_id}",
+    response_model=schemas.ConductorOut,
+    tags=["Conductores"],
+    summary="Editar conductor (requiere token)"
+)
+def actualizar_conductor(
+    conductor_id: int,
+    conductor_actualizado: schemas.ConductorCreate,
+    db: Session = Depends(get_db),
+    usuario: str = Depends(verificar_token)   # 🔒 PROTEGIDO
+):
+    conductor = crud.obtener_conductor(db, conductor_id)
+    if not conductor:
+        raise HTTPException(status_code=404, detail="Conductor no encontrado")
+    
+    # Actualizamos los valores en la base de datos
+    conductor.nombre = conductor_actualizado.nombre
+    conductor.licencia = conductor_actualizado.licencia
+    
+    db.commit()
+    db.refresh(conductor)
+    return conductor
 
 # ── Vehículos ──────────────────────────────────────────────
 @app.post(

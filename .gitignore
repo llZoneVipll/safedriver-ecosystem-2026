@@ -5,3 +5,9 @@ __pycache__/
 safedriver.db
 .pytest_cache/
 .env
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.pub-cache/
+mobile/.pub/
+mobile/build/
