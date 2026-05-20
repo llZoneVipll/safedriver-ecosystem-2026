@@ -253,6 +253,68 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
+      // ── NUEVO COMPONENTE: BOTÓN FLOTANTE PARA CREAR CONDUCTOR ──
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.deepOrange,
+        tooltip: 'Registrar Conductor',
+        onPressed: () {
+          TextEditingController nuevoNombreCtrl = TextEditingController();
+          TextEditingController nuevaLicenciaCtrl = TextEditingController();
+
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text("Registrar Nuevo Conductor"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nuevoNombreCtrl,
+                    decoration: const InputDecoration(labelText: "Nombre Completo"),
+                  ),
+                  TextField(
+                    controller: nuevaLicenciaCtrl,
+                    decoration: const InputDecoration(labelText: "Número de Licencia"),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Cancelar"),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (nuevoNombreCtrl.text.isNotEmpty && nuevaLicenciaCtrl.text.isNotEmpty) {
+                      bool ok = await ApiService().crearConductor(
+                        nuevoNombreCtrl.text,
+                        nuevaLicenciaCtrl.text,
+                      );
+                      if (ok) {
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Conductor registrado con éxito")),
+                          );
+                        }
+                        _refrescar(); 
+                      } else {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Error: No autorizado o servidor caído")),
+                          );
+                        }
+                      }
+                    }
+                  },
+                  child: const Text("Registrar"),
+                ),
+              ],
+            ),
+          );
+        },
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
     );
   }
 }
