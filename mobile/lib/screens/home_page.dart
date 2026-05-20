@@ -74,7 +74,7 @@ class _HomePageState extends State<HomePage> {
           padding: const EdgeInsets.all(16),
           children: [
             // ── Sección Conductores ──────────────────────
-            const Text('🚗 Conductores Registrados',
+            const Text(' Conductores Registrados',
                 style:
                     TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
@@ -201,7 +201,7 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 24),
 
             // ── Sección Alertas ──────────────────────────
-            const Text('🚨 Alertas Recientes',
+            const Text(' Alertas Recientes',
                 style:
                     TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),

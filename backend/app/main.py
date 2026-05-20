@@ -73,7 +73,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
 def crear_conductor(
     conductor: schemas.ConductorCreate,
     db: Session = Depends(get_db),
-    usuario: str = Depends(verificar_token)   # 🔒 PROTEGIDO
+    usuario: str = Depends(verificar_token)   #  PROTEGIDO
 ):
     return crud.crear_conductor(db, conductor)
 
@@ -105,7 +105,7 @@ def obtener_conductor(conductor_id: int, db: Session = Depends(get_db)):
 def eliminar_conductor(
     conductor_id: int, 
     db: Session = Depends(get_db),
-    usuario: str = Depends(verificar_token)   # 🔒 PROTEGIDO
+    usuario: str = Depends(verificar_token)   #  PROTEGIDO
 ):
     # Buscamos al conductor usando tu función CRUD actual
     conductor = crud.obtener_conductor(db, conductor_id)
@@ -127,7 +127,7 @@ def actualizar_conductor(
     conductor_id: int,
     conductor_actualizado: schemas.ConductorCreate,
     db: Session = Depends(get_db),
-    usuario: str = Depends(verificar_token)   # 🔒 PROTEGIDO
+    usuario: str = Depends(verificar_token)   #  PROTEGIDO
 ):
     conductor = crud.obtener_conductor(db, conductor_id)
     if not conductor:
@@ -152,7 +152,7 @@ def actualizar_conductor(
 def crear_vehiculo(
     vehiculo: schemas.VehiculoCreate,
     db: Session = Depends(get_db),
-    usuario: str = Depends(verificar_token)   # 🔒 PROTEGIDO
+    usuario: str = Depends(verificar_token)   #  PROTEGIDO
 ):
     conductor = crud.obtener_conductor(db, vehiculo.conductor_id)
     if not conductor:
@@ -180,7 +180,7 @@ def listar_vehiculos(db: Session = Depends(get_db)):
 def registrar_alerta(
     alerta: schemas.AlertaCreate,
     db: Session = Depends(get_db),
-    usuario: str = Depends(verificar_token)   # 🔒 PROTEGIDO
+    usuario: str = Depends(verificar_token)   #  PROTEGIDO
 ):
     if not crud.obtener_conductor(db, alerta.conductor_id):
         raise HTTPException(status_code=404, detail="Conductor no encontrado")
@@ -200,6 +200,6 @@ def registrar_alerta(
 def listar_alertas(
     conductor_id: int = None,
     db: Session = Depends(get_db),
-    usuario: str = Depends(verificar_token)   # 🔒 PROTEGIDO
+    usuario: str = Depends(verificar_token)   #  PROTEGIDO
 ):
     return crud.obtener_alertas(db, conductor_id)
