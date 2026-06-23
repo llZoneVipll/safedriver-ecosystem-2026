@@ -167,6 +167,30 @@ def crear_vehiculo(
 def listar_vehiculos(db: Session = Depends(get_db)):
     return crud.obtener_vehiculos(db)
 
+# ── Stats Dashboard ────────────────────────────────────────
+@app.get("/stats", tags=["Dashboard"],
+         summary="Estadísticas generales del sistema")
+def obtener_estadisticas(
+    db: Session = Depends(get_db),
+    usuario: str = Depends(verificar_token)
+):
+    return crud.obtener_stats(db)
+
+
+# ── Eliminar conductor ─────────────────────────────────────
+@app.delete("/conductores/{conductor_id}",
+            tags=["Conductores"],
+            summary="Eliminar conductor (requiere token)")
+def eliminar_conductor(
+    conductor_id: int,
+    db: Session = Depends(get_db),
+    usuario: str = Depends(verificar_token)
+):
+    conductor = crud.eliminar_conductor(db, conductor_id)
+    if not conductor:
+        raise HTTPException(status_code=404,
+                            detail="Conductor no encontrado")
+    return {"msj": f"Conductor {conductor_id} eliminado"}
 
 # ── Alertas ────────────────────────────────────────────────
 @app.post(

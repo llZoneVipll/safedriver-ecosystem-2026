@@ -15,76 +15,71 @@ class ApiService {
     };
   }
 
-  // ── Conductores ──────────────────────────────────────────
+  // ── Stats ─────────────────────────────────────────────────
+  Future<Map<String, dynamic>> fetchStats() async {
+    try {
+      final h = await _headers();
+      final r = await http
+          .get(Uri.parse('$baseUrl/stats'), headers: h)
+          .timeout(const Duration(seconds: 5));
+      if (r.statusCode == 200) return jsonDecode(r.body);
+      throw Exception('Error ${r.statusCode}');
+    } catch (e) {
+      throw Exception('No se pudo conectar con SafeDriver');
+    }
+  }
+
+  // ── Conductores ───────────────────────────────────────────
   Future<List<Conductor>> fetchConductores() async {
     try {
-      final response = await http
+      final r = await http
           .get(Uri.parse('$baseUrl/conductores/'))
           .timeout(const Duration(seconds: 5));
-
-      if (response.statusCode == 200) {
-        List json = jsonDecode(response.body);
+      if (r.statusCode == 200) {
+        List json = jsonDecode(r.body);
         return json.map((d) => Conductor.fromJson(d)).toList();
       }
-      throw Exception('Error ${response.statusCode}');
+      throw Exception('Error ${r.statusCode}');
     } catch (e) {
-      throw Exception('No se pudo conectar con SafeDriver Backend');
+      throw Exception('No se pudo conectar con SafeDriver');
     }
   }
 
   Future<bool> crearConductor(String nombre, String licencia) async {
-    final headers = await _headers();
-    final response = await http.post(
-      Uri.parse('$baseUrl/conductores/'),
-      headers: headers,
-      body: jsonEncode({'nombre': nombre, 'licencia': licencia}),
-    );
-    return response.statusCode == 201;
+    try {
+      final h = await _headers();
+      final r = await http.post(
+        Uri.parse('$baseUrl/conductores/'),
+        headers: h,
+        body: jsonEncode({'nombre': nombre, 'licencia': licencia}),
+      );
+      return r.statusCode == 201;
+    } catch (_) { return false; }
   }
-  
-  // Eliminar un conductor de forma segura
+
   Future<bool> eliminarConductor(int id) async {
-    // 1. Recuperamos el token de la sesión persistente
-    final token = await AuthService().getToken(); 
-    
-    // 2. Enviamos la petición DELETE blindada
-    final response = await http.delete(
-      Uri.parse('$baseUrl/conductores/$id'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
-    
-    return response.statusCode == 200;
+    try {
+      final h = await _headers();
+      final r = await http.delete(
+          Uri.parse('$baseUrl/conductores/$id'), headers: h);
+      return r.statusCode == 200;
+    } catch (_) { return false; }
   }
 
-  // Actualizar un conductor existente
-  Future<bool> editarConductor(int id, String nombre, String licencia) async {
-    final headers = await _headers();
-    final response = await http.put(
-      Uri.parse('$baseUrl/conductores/$id'),
-      headers: headers,
-      body: jsonEncode({
-        'nombre': nombre,
-        'licencia': licencia
-      }),
-    );
-    return response.statusCode == 200;
-  }
-
-  // ── Alertas ──────────────────────────────────────────────
+  // ── Alertas ───────────────────────────────────────────────
   Future<List<Alerta>> fetchAlertas() async {
     try {
-      final headers = await _headers();
-      final response = await http
-          .get(Uri.parse('$baseUrl/alertas/'), headers: headers)
+      final h = await _headers();
+      final r = await http
+          .get(Uri.parse('$baseUrl/alertas/'), headers: h)
           .timeout(const Duration(seconds: 5));
-
-      if (response.statusCode == 200) {
-        List json = jsonDecode(response.body);
+      if (r.statusCode == 200) {
+        List json = jsonDecode(r.body);
         return json.map((d) => Alerta.fromJson(d)).toList();
       }
-      throw Exception('Error ${response.statusCode}');
+      throw Exception('Error ${r.statusCode}');
     } catch (e) {
-      throw Exception('No se pudo obtener alertas');
+      throw Exception('No se pudo obtener las alertas');
     }
   }
 }

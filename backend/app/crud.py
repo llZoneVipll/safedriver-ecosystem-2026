@@ -51,3 +51,23 @@ def obtener_alertas(db: Session, conductor_id: int = None):
     if conductor_id:
         query = query.filter(models.Alerta.conductor_id == conductor_id)
     return query.order_by(models.Alerta.timestamp.desc()).all()
+    # ── Stats para el Dashboard ────────────────────────────────
+def obtener_stats(db: Session):
+    return {
+        "total_conductores": db.query(models.Conductor).count(),
+        "total_alertas":     db.query(models.Alerta).count(),
+        "alertas_criticas":  db.query(models.Alerta).filter(
+                                models.Alerta.nivel == "CRITICO").count(),
+        "alertas_en_alerta": db.query(models.Alerta).filter(
+                                models.Alerta.nivel == "ALERTA").count(),
+    }
+
+# ── Eliminar conductor ─────────────────────────────────────
+def eliminar_conductor(db: Session, conductor_id: int):
+    conductor = db.query(models.Conductor).filter(
+        models.Conductor.id == conductor_id
+    ).first()
+    if conductor:
+        db.delete(conductor)
+        db.commit()
+    return conductor
