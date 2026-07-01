@@ -17,11 +17,18 @@ def leer_sensores_cabina() -> dict:
     nivel_fatiga = round(min(1.0, base_fatiga + random.uniform(-0.05, 0.1)), 2)
     velocidad_kmh = round(random.uniform(40.0, 110.0), 1)
 
+    # Simular BPM basado en fatiga
+    if nivel_fatiga > 0.7:
+        valor_bpm = round(random.uniform(50.0, 65.0), 1)
+    else:
+        valor_bpm = round(random.uniform(70.0, 95.0), 1)
+
     return {
         "conductor_id": CONDUCTOR_ID,
         "frecuencia_parpadeo": frecuencia_parpadeo,
         "nivel_fatiga": nivel_fatiga,
         "velocidad_kmh": velocidad_kmh,
+        "valor_bpm": valor_bpm,
         "timestamp": time.time()
     }
 
@@ -43,7 +50,6 @@ def iniciar_sensor():
         
         print(f"[TX {ciclo:04d}] Fatiga: {payload['nivel_fatiga']} | Vel: {payload['velocidad_kmh']} km/h -> Enviado al Broker")
         
-        # El sensor envía datos constantemente cada 2 segundos
         time.sleep(2)
 
 if __name__ == "__main__":

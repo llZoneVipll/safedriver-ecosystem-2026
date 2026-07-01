@@ -13,16 +13,37 @@ class _AlertasScreenState extends State<AlertasScreen> {
   String _filtro = 'TODOS';
 
   @override
-  void initState() { super.initState(); _refrescar(); }
+  void initState() {
+    super.initState();
+    _refrescar();
+  }
 
-  void _refrescar() =>
-      setState(() => _future = ApiService().fetchAlertas());
+  void _refrescar() {
+    setState(() {
+      _future = ApiService().fetchAlertas();
+    });
+  }
 
-  Color _color(String n) =>
-      n == 'CRITICO' ? Colors.red : n == 'ALERTA' ? Colors.orange : Colors.green;
+  Color _color(String n) => n == 'CRITICO'
+      ? Colors.red
+      : n == 'ALERTA'
+          ? Colors.orange
+          : Colors.green;
 
-  IconData _icon(String t) =>
-      t == 'FATIGA' ? Icons.bedtime : t == 'VELOCIDAD' ? Icons.speed : Icons.check_circle;
+  IconData _icon(String t) => t == 'FATIGA'
+      ? Icons.bedtime
+      : t == 'VELOCIDAD'
+          ? Icons.speed
+          : Icons.check_circle;
+
+  String _formatMetrics(Alerta a) {
+    List<String> parts = [];
+    if (a.valorBpm != null) parts.add('BPM: ${a.valorBpm}');
+    if (a.valorVelocidad != null) parts.add('${a.valorVelocidad} km/h');
+    return parts.isNotEmpty
+        ? parts.join('  ·  ')
+        : 'Datos de telemetría no disponibles';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +60,6 @@ class _AlertasScreenState extends State<AlertasScreen> {
         ],
       ),
       body: Column(children: [
-        // Filtros
         Container(
           color: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -47,10 +67,13 @@ class _AlertasScreenState extends State<AlertasScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: ['TODOS', 'CRITICO', 'ALERTA', 'NORMAL'].map((f) {
-                final color = f == 'CRITICO' ? Colors.red
-                    : f == 'ALERTA' ? Colors.orange
-                    : f == 'NORMAL' ? Colors.green
-                    : const Color(0xFFE64A19);
+                final color = f == 'CRITICO'
+                    ? Colors.red
+                    : f == 'ALERTA'
+                        ? Colors.orange
+                        : f == 'NORMAL'
+                            ? Colors.green
+                            : const Color(0xFFE64A19);
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
@@ -72,7 +95,6 @@ class _AlertasScreenState extends State<AlertasScreen> {
             ),
           ),
         ),
-        // Lista
         Expanded(
           child: RefreshIndicator(
             onRefresh: () async => _refrescar(),
@@ -82,8 +104,8 @@ class _AlertasScreenState extends State<AlertasScreen> {
               builder: (_, snap) {
                 if (snap.connectionState == ConnectionState.waiting) {
                   return const Center(
-                      child: CircularProgressIndicator(
-                          color: Color(0xFFE64A19)));
+                      child:
+                          CircularProgressIndicator(color: Color(0xFFE64A19)));
                 }
                 if (snap.hasError) {
                   return Center(
@@ -102,14 +124,10 @@ class _AlertasScreenState extends State<AlertasScreen> {
                         ]),
                   );
                 }
-                final lista = snap.data!
-                    .where((a) => _filtro == 'TODOS' || a.nivel == _filtro)
-                    .toList();
                 if (lista.isEmpty) {
                   return Center(
                     child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
                           Icon(Icons.check_circle_outline,
                               size: 64, color: Colors.green[300]),
                           const SizedBox(height: 16),
@@ -140,13 +158,10 @@ class _AlertasScreenState extends State<AlertasScreen> {
                               decoration: BoxDecoration(
                                   color: color.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(10)),
-                              child: Icon(_icon(a.tipo), color: color, size: 22),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
+                              child:
+                                  Icon(_icon(a.tipo), color: color, size: 22),
                               child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
                                     Row(children: [
                                       Text(a.tipo,
                                           style: TextStyle(
@@ -171,7 +186,7 @@ class _AlertasScreenState extends State<AlertasScreen> {
                                     ]),
                                     const SizedBox(height: 4),
                                     Text(
-                                      'Conductor #${a.conductorId}  ·  BPM: ${a.valorBpm ?? "N/A"}  ·  ${a.valorVelocidad != null ? "${a.valorVelocidad} km/h" : ""}',
+                                      'Conductor #${a.conductorId}  ·  ${_formatMetrics(a)}',
                                       style: const TextStyle(
                                           color: Colors.grey, fontSize: 12),
                                     ),
