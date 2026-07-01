@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/conductor.dart';
+import '../models/vehiculo.dart';
 import '../services/api_service.dart';
+import '../services/auth_service.dart';
 import 'add_conductor_screen.dart';
 
 class ConductoresScreen extends StatefulWidget {
@@ -10,17 +12,32 @@ class ConductoresScreen extends StatefulWidget {
 }
 
 class _ConductoresScreenState extends State<ConductoresScreen> {
-  late Future<List<Conductor>> _future;
+  late Future<List<Conductor>> _futureConductores;
+  late Future<List<Vehiculo>> _futureVehiculos;
+  String _userRole = 'usuario';
 
   @override
   void initState() {
     super.initState();
-    _refrescar();
+    // Cargamos ambas fuentes de datos al entrar a la pantalla
+    _futureConductores = ApiService().fetchConductores();
+    _futureVehiculos = ApiService().fetchVehiculos();
+    _cargarRol();
+  }
+
+  void _cargarRol() async {
+    final role = await AuthService().getRole();
+    if (mounted) {
+      setState(() {
+        _userRole = role ?? 'usuario';
+      });
+    }
   }
 
   void _refrescar() {
     setState(() {
-      _future = ApiService().fetchConductores();
+      _futureConductores = ApiService().fetchConductores();
+      _futureVehiculos = ApiService().fetchVehiculos();
     });
   }
 
@@ -44,10 +61,14 @@ class _ConductoresScreenState extends State<ConductoresScreen> {
     );
     if (ok == true) {
       final success = await ApiService().eliminarConductor(c.id);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(success ? '${c.nombre} eliminado' : 'Error al eliminar'),
-        backgroundColor: success ? Colors.green : Colors.red,
-      ));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(success
+              ? '${c.nombre} eliminado'
+              : 'Error al eliminar (Verifica permisos)'),
+          backgroundColor: success ? Colors.green : Colors.red,
+        ));
+      }
       if (success) _refrescar();
     }
   }
@@ -58,8 +79,10 @@ class _ConductoresScreenState extends State<ConductoresScreen> {
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
         backgroundColor: const Color(0xFFE64A19),
-        title: const Text('Conductores',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        // Título dinámico
+        title: Text(_userRole == 'gestor' ? 'Conductores' : 'Mi Información',
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
               icon: const Icon(Icons.refresh, color: Colors.white),
@@ -70,108 +93,193 @@ class _ConductoresScreenState extends State<ConductoresScreen> {
         onRefresh: () async => _refrescar(),
         color: const Color(0xFFE64A19),
         child: FutureBuilder<List<Conductor>>(
-          future: _future,
-          builder: (ctx, snap) {
-            if (snap.connectionState == ConnectionState.waiting) {
+          future: _futureConductores,
+          builder: (ctx, snapConductor) {
+            if (snapConductor.connectionState == ConnectionState.waiting) {
               return const Center(
                   child: CircularProgressIndicator(color: Color(0xFFE64A19)));
             }
-            if (snap.hasError) {
-              return Center(
-                child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.wifi_off, size: 64, color: Colors.grey),
-                      const SizedBox(height: 16),
-                      const Text('Sin conexión con el servidor',
-                          style: TextStyle(color: Colors.grey)),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                          onPressed: _refrescar,
-                          child: const Text('Reintentar')),
-                    ]),
-              );
+            if (snapConductor.hasError) {
+              return const Center(child: Text('Sin conexión con el servidor'));
             }
-            if (snap.data == null || snap.data!.isEmpty) {
-              return const Center(
-                child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.people_outline, size: 64, color: Colors.grey),
-                      SizedBox(height: 16),
-                      Text('No hay conductores registrados',
-                          style: TextStyle(color: Colors.grey)),
-                      SizedBox(height: 8),
-                      Text('Usa el botón + para agregar uno',
-                          style: TextStyle(color: Colors.grey, fontSize: 12)),
-                    ]),
-              );
-            }
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: snap.data!.length,
-              itemBuilder: (_, i) {
-                final c = snap.data![i];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: const Color(0xFFE64A19),
-                      child: Text(
-                        c.nombre.isNotEmpty
-                            ? c.nombre.substring(0, 1).toUpperCase()
-                            : '?',
-                        style: const TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    title: Text(c.nombre,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Row(children: [
-                      const Icon(Icons.credit_card,
-                          size: 14, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Text(c.licencia,
-                          style: const TextStyle(color: Colors.grey)),
-                    ]),
-                    trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(8),
+
+            // ── VISTA DE ADMINISTRADOR (La lista original) ──
+            if (_userRole == 'gestor') {
+              if (snapConductor.data == null || snapConductor.data!.isEmpty) {
+                return const Center(
+                    child: Text('No hay conductores registrados',
+                        style: TextStyle(color: Colors.grey)));
+              }
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: snapConductor.data!.length,
+                itemBuilder: (_, i) {
+                  final c = snapConductor.data![i];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: const Color(0xFFE64A19),
+                        child: Text(
+                          c.nombre.isNotEmpty
+                              ? c.nombre.substring(0, 1).toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.bold),
                         ),
-                        child: Text('#${c.id}',
-                            style: const TextStyle(
-                                color: Colors.grey, fontSize: 12)),
                       ),
-                      IconButton(
-                        icon:
-                            const Icon(Icons.delete_outline, color: Colors.red),
-                        onPressed: () => _eliminar(c),
-                      ),
-                    ]),
-                  ),
-                );
-              },
-            );
+                      title: Text(c.nombre,
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Row(children: [
+                        const Icon(Icons.credit_card,
+                            size: 14, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Text(c.licencia,
+                            style: const TextStyle(color: Colors.grey)),
+                      ]),
+                      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(8)),
+                          child: Text('#${c.id}',
+                              style: const TextStyle(
+                                  color: Colors.grey, fontSize: 12)),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline,
+                              color: Colors.red),
+                          onPressed: () => _eliminar(c),
+                        ),
+                      ]),
+                    ),
+                  );
+                },
+              );
+            }
+            // ── VISTA DE CONDUCTOR (Su perfil personal) ──
+            else {
+              if (snapConductor.data == null || snapConductor.data!.isEmpty) {
+                return const Center(child: Text('Error al cargar perfil'));
+              }
+              final conductorActual = snapConductor.data!.first;
+
+              // Anidamos un FutureBuilder para mostrar también el camión
+              return FutureBuilder<List<Vehiculo>>(
+                  future: _futureVehiculos,
+                  builder: (ctx, snapVehiculo) {
+                    if (snapVehiculo.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Center(
+                          child: CircularProgressIndicator(
+                              color: Color(0xFFE64A19)));
+                    }
+                    final vehiculos = snapVehiculo.data ?? [];
+                    return _buildPerfilPersonal(conductorActual, vehiculos);
+                  });
+            }
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AddConductorScreen()),
-          );
-          if (result == true) _refrescar();
-        },
-        backgroundColor: const Color(0xFFE64A19),
-        icon: const Icon(Icons.person_add, color: Colors.white),
-        label: const Text('Nuevo Conductor',
-            style: TextStyle(color: Colors.white)),
-      ),
+      // Solo el gestor puede agregar nuevos
+      floatingActionButton: _userRole == 'gestor'
+          ? FloatingActionButton.extended(
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AddConductorScreen()),
+                );
+                if (result == true) _refrescar();
+              },
+              backgroundColor: const Color(0xFFE64A19),
+              icon: const Icon(Icons.person_add, color: Colors.white),
+              label: const Text('Nuevo Conductor',
+                  style: TextStyle(color: Colors.white)),
+            )
+          : null,
+    );
+  }
+
+  // ── DISEÑO DE LA PANTALLA DE PERFIL (UX) ──
+  Widget _buildPerfilPersonal(Conductor conductor, List<Vehiculo> vehiculos) {
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        // Avatar grande
+        Center(
+          child: CircleAvatar(
+            radius: 56,
+            backgroundColor: const Color(0xFFE64A19).withOpacity(0.1),
+            child: const Icon(Icons.person, size: 64, color: Color(0xFFE64A19)),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Datos limpios sin ID técnico
+        Text(conductor.nombre,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.credit_card, size: 16, color: Colors.grey),
+            const SizedBox(width: 6),
+            Text('Licencia: ${conductor.licencia}',
+                style: const TextStyle(color: Colors.grey, fontSize: 16)),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Center(
+          child: Chip(
+            label: const Text('Estado: Activo',
+                style: TextStyle(
+                    color: Colors.green, fontWeight: FontWeight.bold)),
+            backgroundColor: Colors.green.withOpacity(0.1),
+            side: BorderSide.none,
+          ),
+        ),
+
+        const SizedBox(height: 40),
+        const Text('Vehículo Asignado',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+
+        // Información del Camión
+        if (vehiculos.isEmpty)
+          Card(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: const Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Center(
+                      child: Text(
+                          'No tienes un vehículo asignado en el sistema.',
+                          style: TextStyle(color: Colors.grey)))))
+        else
+          ...vehiculos.map((v) => Card(
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                elevation: 2,
+                child: ListTile(
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  leading: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.1),
+                        shape: BoxShape.circle),
+                    child: const Icon(Icons.directions_car, color: Colors.blue),
+                  ),
+                  title: Text(v.modelo,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 18)),
+                  subtitle: Text('Placa: ${v.placa}'),
+                ),
+              )),
+      ],
     );
   }
 }

@@ -12,9 +12,11 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   Map<String, dynamic>? _stats;
+  List<Alerta> _criticas = [];
   List<Alerta> _recientes = [];
   bool _loading = true;
   String? _error;
+  String _userRole = 'usuario';
 
   @override
   void initState() {
@@ -28,18 +30,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _error = null;
     });
     try {
+      final role = await AuthService().getRole();
       final stats = await ApiService().fetchStats();
       final alertas = await ApiService().fetchAlertas();
-      setState(() {
-        _stats = stats;
-        _recientes = alertas.take(5).toList();
-        _loading = false;
-      });
+
+      if (mounted) {
+        setState(() {
+          _userRole = role ?? 'usuario';
+          _stats = stats;
+
+          _criticas =
+              alertas.where((a) => a.nivel == 'CRITICO').take(3).toList();
+          _recientes =
+              alertas.where((a) => a.nivel != 'CRITICO').take(5).toList();
+
+          _loading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -48,6 +62,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       : n == 'ALERTA'
           ? Colors.orange
           : Colors.green;
+
+  // ── SOLUCIÓN: Formateador dinámico para evitar los null ──
+  String _formatMetrics(Alerta a) {
+    List<String> parts = [];
+    if (a.valorBpm != null) parts.add('BPM: ${a.valorBpm}');
+    if (a.valorVelocidad != null) parts.add('${a.valorVelocidad} km/h');
+    return parts.isNotEmpty
+        ? parts.join('  ·  ')
+        : 'Datos de telemetría no disponibles';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,10 +94,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: () async {
               await AuthService().logout();
-              Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  (_) => false);
+              if (context.mounted) {
+                Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (_) => false);
+              }
             },
           ),
         ],
@@ -92,6 +118,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       _buildBanner(),
                       const SizedBox(height: 20),
                       _buildStatsGrid(),
+                      if (_criticas.isNotEmpty) ...[
+                        const SizedBox(height: 24),
+                        _buildCriticas(),
+                      ],
                       const SizedBox(height: 24),
                       _buildRecientes(),
                     ],
@@ -108,19 +138,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: const Row(children: [
-          Icon(Icons.shield_outlined, color: Colors.white, size: 40),
-          SizedBox(width: 12),
+        child: Row(children: [
+          const Icon(Icons.shield_outlined, color: Colors.white, size: 40),
+          const SizedBox(width: 12),
           Expanded(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Central de Control',
-                  style: TextStyle(
+              Text(
+                  _userRole == 'gestor'
+                      ? 'Central de Control'
+                      : 'Panel de Conductor',
+                  style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.bold)),
-              Text('Monitoreo en tiempo real de conductores',
-                  style: TextStyle(color: Colors.white70, fontSize: 12)),
+              Text(
+                  _userRole == 'gestor'
+                      ? 'Monitoreo global en tiempo real'
+                      : 'Resumen de tus métricas de manejo',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12)),
             ]),
           ),
         ]),
@@ -128,9 +164,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildStatsGrid() {
     if (_stats == null) return const SizedBox();
+
+    bool enRiesgo = _stats!['alertas_criticas'] > 0;
+
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('Resumen del Sistema',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      Text(_userRole == 'gestor' ? 'Resumen del Sistema' : 'Tus Estadísticas',
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
       const SizedBox(height: 12),
       GridView.count(
         crossAxisCount: 2,
@@ -140,14 +179,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
         mainAxisSpacing: 12,
         childAspectRatio: 1.6,
         children: [
-          _statCard('Conductores', '${_stats!['total_conductores']}',
-              Icons.people, Colors.blue),
-          _statCard('Total Alertas', '${_stats!['total_alertas']}',
-              Icons.notifications, const Color(0xFFE64A19)),
-          _statCard('Críticas', '${_stats!['alertas_criticas']}', Icons.warning,
-              Colors.red),
-          _statCard('En Alerta', '${_stats!['alertas_en_alerta']}',
-              Icons.warning_amber, Colors.orange),
+          _statCard(
+              _userRole == 'gestor' ? 'Conductores' : 'Mi Estado',
+              _userRole == 'gestor'
+                  ? '${_stats!['total_conductores']}'
+                  : (enRiesgo ? 'En Riesgo' : 'Óptimo'),
+              _userRole == 'gestor' ? Icons.people : Icons.health_and_safety,
+              _userRole == 'gestor'
+                  ? Colors.blue
+                  : (enRiesgo ? Colors.red : Colors.green)),
+          _statCard(
+              _userRole == 'gestor' ? 'Total Alertas' : 'Mis Alertas',
+              '${_stats!['total_alertas']}',
+              Icons.notifications,
+              const Color(0xFFE64A19)),
+          _statCard(_userRole == 'gestor' ? 'Críticas' : 'Mis Críticas',
+              '${_stats!['alertas_criticas']}', Icons.warning, Colors.red),
+          _statCard(
+              _userRole == 'gestor' ? 'En Alerta' : 'Mis Avisos',
+              '${_stats!['alertas_en_alerta']}',
+              Icons.warning_amber,
+              Colors.orange),
         ],
       ),
     ]);
@@ -171,7 +223,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(value,
                     style: TextStyle(
-                        fontSize: 26,
+                        fontSize: value.length > 5 ? 18 : 26,
                         fontWeight: FontWeight.bold,
                         color: color)),
                 Text(label,
@@ -182,11 +234,56 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       );
 
+  Widget _buildCriticas() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.warning_amber_rounded, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Atención Urgente',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ..._criticas.map((a) {
+            return Card(
+              color: Colors.red.shade50,
+              margin: const EdgeInsets.only(bottom: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.red.shade200, width: 1),
+              ),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Colors.red.withOpacity(0.2),
+                  child: const Icon(Icons.warning, color: Colors.red, size: 20),
+                ),
+                title: Text('${a.tipo} — Conductor #${a.conductorId}',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, color: Colors.red)),
+                subtitle: Text(
+                    '${_formatMetrics(a)}\nFecha: ${a.timestamp.substring(0, 16)}',
+                    style: TextStyle(color: Colors.red.shade700, fontSize: 12)),
+                isThreeLine: true,
+              ),
+            );
+          }),
+        ],
+      );
+
   Widget _buildRecientes() => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Últimas 5 Alertas',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(
+              _userRole == 'gestor'
+                  ? 'Historial de Alertas'
+                  : 'Tus últimos Avisos',
+              style:
+                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           if (_recientes.isEmpty)
             Card(
@@ -197,7 +294,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Icon(Icons.check_circle_outline,
                         size: 40, color: Colors.green[300]),
                     const SizedBox(height: 8),
-                    const Text('Sin alertas registradas',
+                    const Text('No hay alertas menores',
                         style: TextStyle(color: Colors.grey)),
                   ]),
                 ),
@@ -224,8 +321,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     title: Text('${a.tipo} — Conductor #${a.conductorId}',
                         style: TextStyle(
                             fontWeight: FontWeight.w600, color: color)),
-                    subtitle: Text(
-                        'BPM: ${a.valorBpm ?? "N/A"} · ${a.valorVelocidad != null ? "${a.valorVelocidad} km/h" : ""}'),
+                    subtitle: Text(_formatMetrics(a)),
                     trailing: Chip(
                       label: Text(a.nivel,
                           style: TextStyle(
