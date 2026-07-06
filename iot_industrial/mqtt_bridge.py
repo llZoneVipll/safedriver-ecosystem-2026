@@ -1,6 +1,7 @@
 import paho.mqtt.client as mqtt
 import requests
 import json
+import os
 import time
 
 # ─── CONFIGURACIÓN ───────────────────────────────────────────────
@@ -8,8 +9,8 @@ BROKER = "broker.hivemq.com"
 PORT = 1883
 TOPIC_SUBSCRIBE = "safedriver/telemetria/vehiculos/+" 
 
-API_URL_LOGIN = "http://localhost:8000/token"
-API_URL_ALERTA = "http://localhost:8000/alertas/"
+API_URL_LOGIN = "http://backend:8000/token"
+API_URL_ALERTA = os.environ.get("API_URL", "http://localhost:8000/alertas/")
 USUARIO = "admin"
 CONTRASENA = "safedriver123"
 
