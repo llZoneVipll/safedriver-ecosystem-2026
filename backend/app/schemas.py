@@ -39,6 +39,7 @@ class AlertaCreate(BaseModel):
     nivel: str
     valor_bpm: Optional[float] = None
     valor_velocidad: Optional[float] = None
+    valor_fatiga: Optional[float] = None
     parpadeos_por_minuto: Optional[float] = None
     conductor_id: int
     vehiculo_id: int
@@ -49,6 +50,7 @@ class AlertaOut(BaseModel):
     nivel: str
     valor_bpm: Optional[float]
     valor_velocidad: Optional[float]
+    valor_fatiga: Optional[float]
     parpadeos_por_minuto: Optional[float]
     timestamp: datetime
     conductor_id: int

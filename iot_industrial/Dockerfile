@@ -1,11 +1,15 @@
 FROM python:3.11-slim
+
 WORKDIR /app
 
-# Instalar las librerías directamente ya que son pocas
-RUN pip install paho-mqtt requests
+# Evita que Python retenga los print() en un buffer interno —
+# sin esto, los logs pueden no aparecer (o aparecer con retraso) en Docker
+ENV PYTHONUNBUFFERED=1
 
-# Copiar el script del puente
-COPY mqtt_bridge.py .
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Ejecutar el daemon
+COPY . .
+
+# El comando real se define en docker-compose.yml (mqtt_bridge.py o mqtt_sender.py)
 CMD ["python", "mqtt_bridge.py"]

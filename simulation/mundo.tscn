@@ -1,0 +1,71 @@
+[gd_scene load_steps=6 format=3 uid="uid://60yxo4v610uo"]
+
+[ext_resource type="Script" uid="uid://cj512vdw2yabt" path="res://camion.gd" id="1_6ba58"]
+[ext_resource type="Texture2D" uid="uid://dey4lum7pjh4t" path="res://icon.svg" id="1_lgngo"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fw4w5"]
+albedo_texture = ExtResource("1_lgngo")
+
+[sub_resource type="BoxMesh" id="BoxMesh_lgngo"]
+size = Vector3(2, 2, 4)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_fw4w5"]
+size = Vector3(2, 2, 4)
+
+[node name="Mundo" type="Node3D"]
+
+[node name="Carretera" type="CSGBox3D" parent="."]
+use_collision = true
+size = Vector3(20, 0.1, 1000)
+material = SubResource("StandardMaterial3D_fw4w5")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+shadow_enabled = true
+
+[node name="Camion" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3696715, 0)
+script = ExtResource("1_6ba58")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Camion"]
+mesh = SubResource("BoxMesh_lgngo")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Camion"]
+shape = SubResource("BoxShape3D_fw4w5")
+
+[node name="Camera3D" type="Camera3D" parent="Camion"]
+transform = Transform3D(1, 0, 0, 0, 0.9659258, 0.25881904, 0, -0.25881904, 0.9659258, 0, 3, 7)
+fov = 84.961205
+
+[node name="ClienteHTTP" type="HTTPRequest" parent="Camion"]
+
+[node name="TimerAlertas" type="Timer" parent="Camion"]
+wait_time = 2.0
+autostart = true
+
+[node name="HTTPAlertas" type="HTTPRequest" parent="Camion"]
+
+[node name="HUD" type="CanvasLayer" parent="Camion"]
+
+[node name="TextoVelocidad" type="Label" parent="Camion/HUD"]
+offset_left = 28.0
+offset_top = 25.0
+offset_right = 175.0
+offset_bottom = 48.0
+theme_override_font_sizes/font_size = 30
+text = "Velocidad: 20 km/h"
+
+[node name="TextoEstado" type="Label" parent="Camion/HUD"]
+offset_left = 26.0
+offset_top = 80.0
+offset_right = 338.0
+offset_bottom = 122.0
+theme_override_font_sizes/font_size = 30
+text = "Estado: Conectando..."
+
+[node name="Poste" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.188135, 2.200662, -4.0973287)
+size = Vector3(1, 4, 1)
+
+[node name="Poste2" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.188135, 2.200662, -54.402287)
+size = Vector3(1, 4, 1)

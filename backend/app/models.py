@@ -32,10 +32,11 @@ class Alerta(Base):
     __tablename__ = "alertas"
 
     id = Column(Integer, primary_key=True, index=True)
-    tipo = Column(String, nullable=False)           # "FATIGA" o "VELOCIDAD"
-    nivel = Column(String, nullable=False)          # "CRITICO", "ALERTA" o "NORMAL"
-    valor_bpm = Column(Float, nullable=True)        # Ritmo cardíaco del conductor
-    valor_velocidad = Column(Float, nullable=True)  # Velocidad en km/h
+    tipo = Column(String, nullable=False)             # "FATIGA" o "VELOCIDAD"
+    nivel = Column(String, nullable=False)            # "CRITICO", "ALERTA" o "NORMAL"
+    valor_velocidad = Column(Float, nullable=True)    # Velocidad en km/h
+    valor_fatiga = Column(Float, nullable=True)       # Nivel de fatiga (0.0 a 1.0)
+    valor_bpm = Column(Float, nullable=True)          # Ritmo cardíaco del conductor
     parpadeos_por_minuto = Column(Float, nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
     conductor_id = Column(Integer, ForeignKey("conductores.id"), nullable=False)

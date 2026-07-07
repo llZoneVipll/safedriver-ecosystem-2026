@@ -135,6 +135,24 @@ def obtener_estadisticas(
         return crud.obtener_stats(db, conductor_id=usuario["conductor_id"])
     return crud.obtener_stats(db)
 
+# ── Endpoint público para el ecosistema IoT ───────────────
+@app.get("/iot/conductores-activos", tags=["IoT"])
+def get_conductores_activos(db: Session = Depends(get_db)):
+    """
+    Endpoint SIN JWT — diseñado para que el sensor IoT (mqtt_sender.py)
+    descubra dinámicamente qué pares (conductor_id, vehiculo_id) son
+    válidos en la base de datos, en vez de usar IDs hardcodeados.
+    Retorna 404 si aún no hay vehículos registrados.
+    """
+    vehiculos = db.query(models.Vehiculo).all()
+    pares = [
+        {"conductor_id": v.conductor_id, "vehiculo_id": v.id}
+        for v in vehiculos
+    ]
+    if not pares:
+        raise HTTPException(status_code=404, detail="No hay vehículos registrados")
+    return pares
+
 @app.post("/alertas/", response_model=schemas.AlertaOut, status_code=201, tags=["Alertas"])
 def registrar_alerta(
     alerta: schemas.AlertaCreate,

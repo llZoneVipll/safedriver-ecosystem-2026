@@ -15,16 +15,34 @@ services:
       timeout: 3s
       retries: 3
 
-  # Servicio 2: El traductor de protocolos IoT
+  # Servicio 2: El traductor de protocolos IoT (MQTT -> HTTP)
   mqtt_bridge:
     build: ./iot_industrial
+    command: python mqtt_bridge.py
     depends_on:
       backend:
         condition: service_healthy
     environment:
-      - API_URL=http://backend:8000/alertas/
-      # Pon aquí un token JWT válido generado en tu Swagger
-      - JWT_TOKEN=tu_token_jwt_aqui 
+      - API_URL_LOGIN=http://backend:8000/token
+      - API_URL_ALERTA=http://backend:8000/alertas/
+      - USUARIO=admin
+      - CONTRASENA=safedriver123
+      - MQTT_BROKER=broker.hivemq.com
+      - MQTT_TOPIC=safedriver/telemetria/vehiculos/+
+    restart: on-failure
+
+  # Servicio 3: El sensor simulado (Camión en ruta)
+  mqtt_sender:
+    build: ./iot_industrial
+    command: python mqtt_sender.py
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      - API_URL_PARES=http://backend:8000/iot/conductores-activos
+      - MQTT_BROKER=broker.hivemq.com
+      - INTERVALO_REFRESCO_PARES=30
+    restart: on-failure
 
 volumes:
   # Define el volumen para que la DB sobreviva a reinicios
