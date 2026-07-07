@@ -11,3 +11,22 @@ mobile/.flutter-plugins-dependencies
 mobile/.pub-cache/
 mobile/.pub/
 mobile/build/
+# Python / Backend
+venv/
+__pycache__/
+*.pyc
+.env
+backend/*.db
+
+# Docker (¡importante!)
+# El volumen de Docker vive fuera del repo, pero por si acaso:
+*.db
+*.sqlite3
+
+# Flutter
+mobile/.dart_tool/
+mobile/build/
+mobile/.pub-cache/
+
+# Godot
+simulation_godot/.godot/
