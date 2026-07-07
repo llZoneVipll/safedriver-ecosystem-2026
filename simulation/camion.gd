@@ -89,7 +89,7 @@ func _al_recibir_alertas(result: int, response_code: int, headers: PackedStringA
 		texto_estado.text = "¡ALERTA! FRENO AUTOMÁTICO ACTIVADO (" + estado_conductor + ")"
 		texto_estado.add_theme_color_override("font_color", Color(1, 0, 0))
 	else:
-		# 👈 RESET: si la última alerta ya es NORMAL, soltamos el freno
+		# RESET: si la última alerta ya es NORMAL, soltamos el freno
 		if freno_activado:
 			freno_activado = false
 		texto_estado.text = "Estado: MONITOREO ACTIVO (NORMAL)"

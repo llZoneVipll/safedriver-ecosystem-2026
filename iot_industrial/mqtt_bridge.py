@@ -11,8 +11,8 @@ PORT   = int(os.getenv("MQTT_PORT", "1883"))
 
 TOPIC_SUBSCRIBE = os.getenv("MQTT_TOPIC", "safedriver/telemetria/vehiculos/+")
 
-API_URL_LOGIN  = os.getenv("API_URL_LOGIN", "http://localhost:8000/token")
-API_URL_ALERTA = os.getenv("API_URL_ALERTA", "http://localhost:8000/alertas/")
+API_URL_LOGIN  = os.getenv("API_URL_LOGIN", "http://backend:8000/token")
+API_URL_ALERTA = os.getenv("API_URL_ALERTA", "http://backend:8000/alertas/")
 
 USUARIO    = os.getenv("USUARIO", "admin")
 CONTRASENA = os.getenv("CONTRASENA", "safedriver123")
